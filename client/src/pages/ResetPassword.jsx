@@ -1,52 +1,49 @@
 import { Link, useParams } from "react-router-dom";
+import AuthLayout from "../components/AuthLayout.jsx";
 
 const ResetPassword = () => {
   const { token } = useParams();
 
   return (
-    <div className="mx-auto w-full max-w-md">
-      <div className="rounded-2xl border bg-white p-6">
-        <h1 className="text-xl font-semibold">Reset password</h1>
-        <p className="mt-1 text-sm text-slate-600">
-          Reset token: <span className="font-mono">{token}</span>
-        </p>
+    <AuthLayout
+      title="Reset Password"
+      subtitle="Please provide your information to reset password."
+      leftPrompt="Already have Account? Sign in now."
+      leftLinkText="SIGN IN"
+      leftLinkTo="/login"
+    >
+      <form className="space-y-3">
+        <input
+          className="h-10 w-full rounded border border-slate-300 px-3 text-sm outline-none focus:border-slate-400"
+          type="password"
+          placeholder="New Password"
+          autoComplete="new-password"
+        />
+        <input
+          className="h-10 w-full rounded border border-slate-300 px-3 text-sm outline-none focus:border-slate-400"
+          type="password"
+          placeholder="Confirm Password"
+          autoComplete="new-password"
+        />
 
-        <form className="mt-6 space-y-4">
-          <label className="block">
-            <span className="text-sm font-medium">New password</span>
-            <input
-              className="mt-1 w-full rounded-lg border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-slate-300"
-              type="password"
-              placeholder="New password"
-              autoComplete="new-password"
-            />
-          </label>
+        <button
+          type="button"
+          className="mt-2 h-10 w-full rounded bg-black text-xs font-semibold tracking-[0.18em] text-white"
+        >
+          RESET
+        </button>
 
-          <label className="block">
-            <span className="text-sm font-medium">Confirm password</span>
-            <input
-              className="mt-1 w-full rounded-lg border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-slate-300"
-              type="password"
-              placeholder="Confirm password"
-              autoComplete="new-password"
-            />
-          </label>
+        <div className="pt-2 text-center text-[10px] text-slate-400">
+          {token}
+        </div>
 
-          <button
-            type="button"
-            className="w-full rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800"
-          >
-            Update password
-          </button>
-        </form>
-
-        <p className="mt-5 text-sm text-slate-700">
-          <Link className="hover:underline" to="/login">
-            Back to login
+        <div className="pt-2 text-center text-xs text-slate-600">
+          <Link to="/login" className="hover:underline">
+            Back
           </Link>
-        </p>
-      </div>
-    </div>
+        </div>
+      </form>
+    </AuthLayout>
   );
 };
 
