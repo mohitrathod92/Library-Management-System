@@ -29,9 +29,9 @@ app.use(
   })
 );
 
-app.use("/api/v1/auth", authRouter);
-app.use("/api/v1/book", bookRouter);
-app.use("/api/v1/borrow", borrowRouter);
-app.use("/api/v1/user", userRouter);
+app.use("/api/auth", authRouter);
+app.use("/api/book", bookRouter);
+app.use("/api/borrow", borrowRouter);
+app.use("/api/user", userRouter);
 
 app.use(errorMiddleware);
