@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { useDispatch } from "react-redux";
-import { login } from "../store/slices/authSlice.js";
+import { useDispatch, useSelector } from "react-redux";
+import { login, resetAuthSlice } from "../store/slices/authSlice.js";
 import AuthLayout from "../components/AuthLayout.jsx";
+import { toast } from "react-toastify";
 
 const Login = () => {
   const navigate = useNavigate();
@@ -10,12 +11,26 @@ const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
+  const { loading, error, isAuthenticated, message } = useSelector(
+    (state) => state.auth
+  );
+
   const handleSubmit = (e) => {
     e.preventDefault();
-    // Simulate login logic
-    dispatch(login({ email, role: "Admin", name: "ashutosh patil" }));
-    navigate("/dashboard");
+    dispatch(login({ email, password }));
   };
+
+  useEffect(() => {
+    if (error) {
+      toast.error(error);
+      dispatch(resetAuthSlice());
+    }
+    if (isAuthenticated) {
+      toast.success(message);
+      navigate("/dashboard");
+      dispatch(resetAuthSlice());
+    }
+  }, [error, isAuthenticated, message, navigate, dispatch]);
 
   return (
     <AuthLayout
@@ -34,6 +49,7 @@ const Login = () => {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           required
+          disabled={loading}
         />
         <input
           className="h-10 w-full rounded border border-slate-300 px-3 text-sm outline-none focus:border-slate-400"
@@ -43,13 +59,15 @@ const Login = () => {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           required
+          disabled={loading}
         />
 
         <button
           type="submit"
-          className="mt-2 h-10 w-full rounded bg-black text-xs font-semibold tracking-[0.18em] text-white"
+          className="mt-2 h-10 w-full rounded bg-black text-xs font-semibold tracking-[0.18em] text-white disabled:bg-slate-400"
+          disabled={loading}
         >
-          SIGN IN
+          {loading ? "SIGNING IN..." : "SIGN IN"}
         </button>
 
         <div className="pt-2 text-center text-xs text-slate-600">

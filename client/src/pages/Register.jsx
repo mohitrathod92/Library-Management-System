@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { useDispatch } from "react-redux";
-import { register } from "../store/slices/authSlice.js";
+import { useDispatch, useSelector } from "react-redux";
+import { register, resetAuthSlice } from "../store/slices/authSlice.js";
 import AuthLayout from "../components/AuthLayout.jsx";
+import { toast } from "react-toastify";
 
 const Register = () => {
   const navigate = useNavigate();
@@ -11,12 +12,24 @@ const Register = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
+  const { loading, error, message } = useSelector((state) => state.auth);
+
   const handleSubmit = (e) => {
     e.preventDefault();
-    // Simulate register logic
-    dispatch(register({ email, name: fullName, role: "User" }));
-    navigate("/dashboard");
+    dispatch(register({ name: fullName, email, password }));
   };
+
+  useEffect(() => {
+    if (error) {
+      toast.error(error);
+      dispatch(resetAuthSlice());
+    }
+    if (message === "Please check your email for verification code.") {
+      toast.success(message);
+      navigate("/otp", { state: { email } });
+      dispatch(resetAuthSlice());
+    }
+  }, [error, message, navigate, dispatch, email]);
 
   return (
     <AuthLayout
@@ -35,6 +48,7 @@ const Register = () => {
           value={fullName}
           onChange={(e) => setFullName(e.target.value)}
           required
+          disabled={loading}
         />
         <input
           className="h-10 w-full rounded border border-slate-300 px-3 text-sm outline-none focus:border-slate-400"
@@ -44,6 +58,7 @@ const Register = () => {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           required
+          disabled={loading}
         />
         <input
           className="h-10 w-full rounded border border-slate-300 px-3 text-sm outline-none focus:border-slate-400"
@@ -53,13 +68,15 @@ const Register = () => {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           required
+          disabled={loading}
         />
 
         <button
           type="submit"
-          className="mt-2 h-10 w-full rounded bg-black text-xs font-semibold tracking-[0.18em] text-white"
+          className="mt-2 h-10 w-full rounded bg-black text-xs font-semibold tracking-[0.18em] text-white disabled:bg-slate-400"
+          disabled={loading}
         >
-          SIGN UP
+          {loading ? "SIGNING UP..." : "SIGN UP"}
         </button>
       </form>
     </AuthLayout>

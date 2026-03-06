@@ -1,4 +1,6 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
+import { useSelector } from "react-redux";
+import { useNavigate } from "react-router-dom";
 import SideBar from "../layout/SideBar.jsx";
 import Header from "../layout/Header.jsx";
 import AdminDashboard from "../components/AdminDashboard.jsx";
@@ -12,12 +14,10 @@ import AddBookPopup from "../popups/AddBookPopup.jsx";
 import ReadBookPopup from "../popups/ReadBookPopup.jsx";
 import RecordBookPopup from "../popups/RecordBookPopup.jsx";
 
-const ADMIN = {
-  name: "ashutosh patil",
-  role: "Admin",
-};
-
 export default function Dashboard() {
+  const navigate = useNavigate();
+  const { user, isAuthenticated } = useSelector((state) => state.auth);
+
   const [isSideBarOpen, setIsSideBarOpen] = useState(false);
   const [selectedComponent, setSelectedComponent] = useState("Dashboard");
 
@@ -26,8 +26,16 @@ export default function Dashboard() {
   const [readBookOpen, setReadBookOpen] = useState(false);
   const [recordBookOpen, setRecordBookOpen] = useState(false);
 
+  useEffect(() => {
+    if (!isAuthenticated) {
+      navigate("/login");
+    }
+  }, [isAuthenticated, navigate]);
+
   const content = useMemo(() => {
-    if (ADMIN.role === "Admin") {
+    if (!user) return null;
+
+    if (user.role === "Admin") {
       if (selectedComponent === "Dashboard") return <AdminDashboard />;
       if (selectedComponent === "Books")
         return (
@@ -45,7 +53,9 @@ export default function Dashboard() {
     if (selectedComponent === "Dashboard") return <UserDashboard />;
     if (selectedComponent === "My Borrowed Books") return <MyBorrowedBooks />;
     return <UserDashboard />;
-  }, [selectedComponent]);
+  }, [selectedComponent, user]);
+
+  if (!user) return null;
 
   return (
     <div className="min-h-screen bg-[#f3f3f3]">
@@ -55,14 +65,14 @@ export default function Dashboard() {
           setIsSideBarOpen={setIsSideBarOpen}
           setSelectedComponent={setSelectedComponent}
           selectedComponent={selectedComponent}
-          role={ADMIN.role}
+          role={user.role}
           onAddNewAdmin={() => setAddNewAdminOpen(true)}
         />
 
         <div className="flex min-h-screen flex-1 flex-col md:ml-64">
           <Header
-            userName={ADMIN.name}
-            role={ADMIN.role}
+            userName={user.name}
+            role={user.role}
             onToggleSideBar={() => setIsSideBarOpen((v) => !v)}
           />
           <div className="flex-1 p-4 md:p-8">{content}</div>
