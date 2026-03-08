@@ -3,50 +3,35 @@ generator client {
 }
 
 datasource db {
-  provider = "mongodb"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 model User {
-  id                     String    @id @default(auto()) @map("_id") @db.ObjectId
-  name                   String
-  email                  String    @unique
-  password               String
-  role                   String    @default("User")
-  accountVerified        Boolean   @default(false)
-  verificationCode       Int?
-  verificationCodeExpire DateTime?
-  resetPasswordToken     String?
-  resetPasswordExpire    DateTime?
-  avatar                 Avatar?
-  borrowedBooks          BorrowedBook[]
-  createdAt              DateTime  @default(now())
-  updatedAt              DateTime  @updatedAt
+  id             String   @id @default(uuid())
+  name           String
+  email          String   @unique
+  password       String
+  role           String   @default("User")
+  avatarPublicId String?
+  avatarUrl      String?
+  borrows        Borrow[]
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   @@map("users")
 }
 
-type Avatar {
-  public_id String?
-  url       String?
-}
-
-type BorrowedBook {
-  bookId       String    @db.ObjectId
-  returned     Boolean   @default(false)
-  bookTitel    String?
-  borrowedDate DateTime?
-  dueDate      DateTime?
-}
-
 model Book {
-  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  id           String   @id @default(uuid())
   title        String
   author       String
   description  String
   price        Float
   quantity     Int
   availability Boolean  @default(true)
+  borrows      Borrow[]
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
@@ -54,23 +39,22 @@ model Book {
 }
 
 model Borrow {
-  id           String   @id @default(auto()) @map("_id") @db.ObjectId
-  user         BorrowUserInfo
-  price        Float
-  book         String   @db.ObjectId
-  borrowDate   DateTime @default(now())
+  id           String    @id @default(uuid())
+  userId       String
+  bookId       String
+  bookTitle    String
+  borrowDate   DateTime  @default(now())
   dueDate      DateTime
   returnDate   DateTime?
-  fine         Float    @default(0)
-  notified     Boolean  @default(false)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  returned     Boolean   @default(false)
+  fine         Float     @default(0)
+  price        Float
+  notified     Boolean   @default(false)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  book         Book      @relation(fields: [bookId], references: [id], onDelete: Cascade)
 
   @@map("borrows")
-}
-
-type BorrowUserInfo {
-  id    String @db.ObjectId
-  name  String
-  email String
 }

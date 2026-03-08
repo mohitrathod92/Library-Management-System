@@ -12,7 +12,9 @@ const Register = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  const { loading, error, message } = useSelector((state) => state.auth);
+  const { loading, error, isAuthenticated, message } = useSelector(
+    (state) => state.auth
+  );
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -24,12 +26,12 @@ const Register = () => {
       toast.error(error);
       dispatch(resetAuthSlice());
     }
-    if (message === "Please check your email for verification code.") {
+    if (isAuthenticated) {
       toast.success(message);
-      navigate("/otp", { state: { email } });
+      navigate("/dashboard");
       dispatch(resetAuthSlice());
     }
-  }, [error, message, navigate, dispatch, email]);
+  }, [error, isAuthenticated, message, navigate, dispatch]);
 
   return (
     <AuthLayout

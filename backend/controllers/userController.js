@@ -70,10 +70,8 @@ export const registerNewAdmin = catchAsyncErrors(async (req, res, next) => {
       password: hashedPassword,
       role: "Admin",
       accountVerified: true,
-      avatar: {
-        public_id: cloudinaryResponse.public_id,
-        url: cloudinaryResponse.secure_url,
-      },
+      avatarPublicId: cloudinaryResponse.public_id,
+      avatarUrl: cloudinaryResponse.secure_url,
     },
   });
 

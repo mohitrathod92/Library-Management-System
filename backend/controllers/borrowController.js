@@ -4,7 +4,7 @@ import { prisma } from "../lib/prisma.js";
 import { calculateFine } from "../utils/fineCalculator.js";
 
 export const recordBorrowedBook = catchAsyncErrors(async (req, res, next) => {
-    const { id } = req.params;
+    const { id } = req.params; // bookId
     const { email } = req.body;
 
     const book = await prisma.book.findUnique({ where: { id } });
@@ -23,9 +23,10 @@ export const recordBorrowedBook = catchAsyncErrors(async (req, res, next) => {
         return next(new ErrorHandler("Book not available.", 400));
     }
 
-    const isAlreadyBorrowed = user.borrowedBooks.find(
-        (b) => b.bookId === id && b.returned === false
-    );
+    // Check if user already has this book borrowed and not returned
+    const isAlreadyBorrowed = await prisma.borrow.findFirst({
+        where: { userId: user.id, bookId: id, returned: false },
+    });
     if (isAlreadyBorrowed) {
         return next(new ErrorHandler("Book already borrowed.", 400));
     }
@@ -41,31 +42,12 @@ export const recordBorrowedBook = catchAsyncErrors(async (req, res, next) => {
         },
     });
 
-    // Push to user's embedded borrowedBooks array
-    await prisma.user.update({
-        where: { id: user.id },
-        data: {
-            borrowedBooks: {
-                push: {
-                    bookId: book.id,
-                    bookTitel: book.title,
-                    borrowedDate: new Date(),
-                    dueDate,
-                    returned: false,
-                },
-            },
-        },
-    });
-
-    // Create a Borrow record
+    // Create a single Borrow record
     await prisma.borrow.create({
         data: {
-            user: {
-                id: user.id,
-                name: user.name,
-                email: user.email,
-            },
-            book: book.id,
+            userId: user.id,
+            bookId: book.id,
+            bookTitle: book.title,
             dueDate,
             price: book.price,
         },
@@ -78,7 +60,7 @@ export const recordBorrowedBook = catchAsyncErrors(async (req, res, next) => {
 });
 
 export const returnBorrowBook = catchAsyncErrors(async (req, res, next) => {
-    const { id } = req.params;
+    const { id } = req.params; // bookId
     const { email } = req.body;
 
     const book = await prisma.book.findUnique({ where: { id } });
@@ -93,24 +75,24 @@ export const returnBorrowBook = catchAsyncErrors(async (req, res, next) => {
         return next(new ErrorHandler("User not found.", 404));
     }
 
-    const borrowedBookEntry = user.borrowedBooks.find(
-        (b) => b.bookId === id && b.returned === false
-    );
-    if (!borrowedBookEntry) {
+    // Find the active borrow record
+    const borrow = await prisma.borrow.findFirst({
+        where: { userId: user.id, bookId: id, returned: false },
+    });
+    if (!borrow) {
         return next(new ErrorHandler("You have not borrowed this book.", 400));
     }
 
-    // Mark as returned in user's embedded array
-    const updatedBorrowedBooks = user.borrowedBooks.map((b) => {
-        if (b.bookId === id && b.returned === false) {
-            return { ...b, returned: true };
-        }
-        return b;
-    });
+    const fine = calculateFine(borrow.dueDate);
 
-    await prisma.user.update({
-        where: { id: user.id },
-        data: { borrowedBooks: updatedBorrowedBooks },
+    // Mark as returned
+    await prisma.borrow.update({
+        where: { id: borrow.id },
+        data: {
+            returned: true,
+            returnDate: new Date(),
+            fine,
+        },
     });
 
     // Restore book quantity
@@ -119,29 +101,6 @@ export const returnBorrowBook = catchAsyncErrors(async (req, res, next) => {
         data: {
             quantity: book.quantity + 1,
             availability: true,
-        },
-    });
-
-    // Find and update the Borrow record
-    const borrow = await prisma.borrow.findFirst({
-        where: {
-            book: id,
-            user: { is: { email } },
-            returnDate: null,
-        },
-    });
-
-    if (!borrow) {
-        return next(new ErrorHandler("Borrow record not found.", 400));
-    }
-
-    const fine = calculateFine(borrow.dueDate);
-
-    await prisma.borrow.update({
-        where: { id: borrow.id },
-        data: {
-            returnDate: new Date(),
-            fine,
         },
     });
 
@@ -155,7 +114,11 @@ export const returnBorrowBook = catchAsyncErrors(async (req, res, next) => {
 });
 
 export const borrowedBooks = catchAsyncErrors(async (req, res, next) => {
-    const { borrowedBooks } = req.user;
+    const borrowedBooks = await prisma.borrow.findMany({
+        where: { userId: req.user.id },
+        include: { book: { select: { title: true, author: true } } },
+        orderBy: { borrowDate: "desc" },
+    });
 
     res.status(200).json({
         success: true,
@@ -165,7 +128,13 @@ export const borrowedBooks = catchAsyncErrors(async (req, res, next) => {
 
 export const getBorrowedBooksForAdmin = catchAsyncErrors(
     async (req, res, next) => {
-        const borrowedBooks = await prisma.borrow.findMany();
+        const borrowedBooks = await prisma.borrow.findMany({
+            include: {
+                user: { select: { name: true, email: true } },
+                book: { select: { title: true, author: true } },
+            },
+            orderBy: { borrowDate: "desc" },
+        });
 
         res.status(200).json({
             success: true,

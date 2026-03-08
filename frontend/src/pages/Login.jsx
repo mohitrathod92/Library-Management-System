@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { login, resetAuthSlice } from "../store/slices/authSlice.js";
 import AuthLayout from "../components/AuthLayout.jsx";
@@ -69,18 +69,6 @@ const Login = () => {
         >
           {loading ? "SIGNING IN..." : "SIGN IN"}
         </button>
-
-        <div className="pt-2 text-center text-xs text-slate-600">
-          <Link to="/forgot-password" className="hover:underline">
-            Forgot Password?
-          </Link>
-        </div>
-
-        <div className="pt-3 text-center text-xs text-slate-600">
-          <Link to="/dashboard" className="hover:underline">
-            Go to Dashboard
-          </Link>
-        </div>
       </form>
     </AuthLayout>
   );

@@ -33,21 +33,6 @@ export const register = createAsyncThunk(
     }
 );
 
-export const verifyOTP = createAsyncThunk(
-    "auth/verifyOTP",
-    async (otpData, { rejectWithValue }) => {
-        try {
-            const response = await axios.post(`${API_URL}/auth/verify-otp`, otpData, {
-                headers: { "Content-Type": "application/json" },
-                withCredentials: true,
-            });
-            return response.data;
-        } catch (error) {
-            return rejectWithValue(error.response.data.message || "OTP verification failed");
-        }
-    }
-);
-
 export const logout = createAsyncThunk(
     "auth/logout",
     async (_, { rejectWithValue }) => {
@@ -62,44 +47,6 @@ export const logout = createAsyncThunk(
     }
 );
 
-export const forgotPassword = createAsyncThunk(
-    "auth/forgotPassword",
-    async (email, { rejectWithValue }) => {
-        try {
-            const response = await axios.post(
-                `${API_URL}/auth/password/forgot`,
-                { email },
-                {
-                    headers: { "Content-Type": "application/json" },
-                    withCredentials: true,
-                }
-            );
-            return response.data;
-        } catch (error) {
-            return rejectWithValue(error.response.data.message || "Request failed");
-        }
-    }
-);
-
-export const resetPassword = createAsyncThunk(
-    "auth/resetPassword",
-    async ({ token, password, confirmPassword }, { rejectWithValue }) => {
-        try {
-            const response = await axios.put(
-                `${API_URL}/auth/password/reset/${token}`,
-                { password, confirmPassword },
-                {
-                    headers: { "Content-Type": "application/json" },
-                    withCredentials: true,
-                }
-            );
-            return response.data;
-        } catch (error) {
-            return rejectWithValue(error.response.data.message || "Reset failed");
-        }
-    }
-);
-
 export const fetchUser = createAsyncThunk(
     "auth/fetchUser",
     async (_, { rejectWithValue }) => {
@@ -109,7 +56,7 @@ export const fetchUser = createAsyncThunk(
             });
             return response.data;
         } catch (error) {
-            return rejectWithValue(error.response.data.message || "Session expired");
+            return rejectWithValue(error.response?.data?.message || "Session expired");
         }
     }
 );
@@ -154,24 +101,11 @@ const authSlice = createSlice({
             })
             .addCase(register.fulfilled, (state, action) => {
                 state.loading = false;
-                state.message = action.payload.message;
-            })
-            .addCase(register.rejected, (state, action) => {
-                state.loading = false;
-                state.error = action.payload;
-            })
-            // Verify OTP
-            .addCase(verifyOTP.pending, (state) => {
-                state.loading = true;
-                state.error = null;
-            })
-            .addCase(verifyOTP.fulfilled, (state, action) => {
-                state.loading = false;
                 state.isAuthenticated = true;
                 state.user = action.payload.user;
                 state.message = action.payload.message;
             })
-            .addCase(verifyOTP.rejected, (state, action) => {
+            .addCase(register.rejected, (state, action) => {
                 state.loading = false;
                 state.error = action.payload;
             })
@@ -180,34 +114,6 @@ const authSlice = createSlice({
                 state.isAuthenticated = false;
                 state.user = null;
                 state.message = action.payload.message;
-            })
-            // Forgot Password
-            .addCase(forgotPassword.pending, (state) => {
-                state.loading = true;
-                state.error = null;
-            })
-            .addCase(forgotPassword.fulfilled, (state, action) => {
-                state.loading = false;
-                state.message = action.payload.message;
-            })
-            .addCase(forgotPassword.rejected, (state, action) => {
-                state.loading = false;
-                state.error = action.payload;
-            })
-            // Reset Password
-            .addCase(resetPassword.pending, (state) => {
-                state.loading = true;
-                state.error = null;
-            })
-            .addCase(resetPassword.fulfilled, (state, action) => {
-                state.loading = false;
-                state.isAuthenticated = true;
-                state.user = action.payload.user;
-                state.message = action.payload.message;
-            })
-            .addCase(resetPassword.rejected, (state, action) => {
-                state.loading = false;
-                state.error = action.payload;
             })
             // Fetch User
             .addCase(fetchUser.pending, (state) => {
@@ -219,10 +125,11 @@ const authSlice = createSlice({
                 state.isAuthenticated = true;
                 state.user = action.payload.user;
             })
-            .addCase(fetchUser.rejected, (state, action) => {
+            .addCase(fetchUser.rejected, (state) => {
                 state.loading = false;
                 state.isAuthenticated = false;
                 state.user = null;
+                state.error = null;
             });
     },
 });
