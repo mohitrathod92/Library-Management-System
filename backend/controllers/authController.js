@@ -5,7 +5,7 @@ import bcrypt from "bcrypt";
 import { sendToken } from "../utils/sendToken.js";
 
 export const register = catchAsyncErrors(async (req, res, next) => {
-    const { name, email, password } = req.body;
+    const { name, email, password, role } = req.body;
 
     if (!name || !email || !password) {
         return next(new ErrorHandler("Please enter all fields.", 400));
@@ -24,8 +24,10 @@ export const register = catchAsyncErrors(async (req, res, next) => {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
+    const userRole = role === 'Admin' ? 'Admin' : 'User';
+
     const user = await prisma.user.create({
-        data: { name, email, password: hashedPassword },
+        data: { name, email, password: hashedPassword, role: userRole },
     });
 
     sendToken(user, 201, "Registered successfully.", res);

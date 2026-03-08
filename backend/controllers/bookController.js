@@ -1,23 +1,28 @@
 import { catchAsyncErrors } from "../middlewares/catchAsyncErrors.js";
 import { prisma } from "../lib/prisma.js";
 import ErrorHandler from "../middlewares/errorMiddlewares.js";
+import { getIO } from "../lib/socket.js";
 
 export const addBook = catchAsyncErrors(async (req, res, next) => {
-  const { title, author, description, price, quantity } = req.body;
-  if (!title || !author || !description || !price || !quantity) {
-    return next(new ErrorHandler("Please fill all fields.", 400));
+  const { title, author, description, price, quantity, genre, cover_url } = req.body;
+  if (!title || !author || !price || !quantity) {
+    return next(new ErrorHandler("Please fill all required fields.", 400));
   }
 
   const book = await prisma.book.create({
     data: {
       title,
       author,
-      description,
+      description: description || "",
       price: parseFloat(price),
       quantity: parseInt(quantity),
       availability: parseInt(quantity) > 0,
+      genre: genre || null,
+      coverUrl: cover_url || null,
     },
   });
+
+  getIO().emit("books_updated");
 
   res.status(201).json({
     success: true,
@@ -44,6 +49,8 @@ export const deleteBook = catchAsyncErrors(async (req, res, next) => {
   }
 
   await prisma.book.delete({ where: { id } });
+
+  getIO().emit("books_updated");
 
   res.status(200).json({
     success: true,

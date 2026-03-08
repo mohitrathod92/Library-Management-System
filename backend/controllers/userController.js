@@ -6,7 +6,7 @@ import { v2 as cloudinary } from "cloudinary";
 
 export const getAllUsers = catchAsyncErrors(async (req, res, next) => {
   const users = await prisma.user.findMany({
-    where: { accountVerified: true },
+    include: { _count: { select: { borrows: true } } },
   });
 
   res.status(200).json({
@@ -16,10 +16,6 @@ export const getAllUsers = catchAsyncErrors(async (req, res, next) => {
 });
 
 export const registerNewAdmin = catchAsyncErrors(async (req, res, next) => {
-  if (!req.files || Object.keys(req.files).length === 0) {
-    return next(new ErrorHandler("Admin avatar is required.", 400));
-  }
-
   const { name, email, password } = req.body;
 
   if (!name || !email || !password) {
@@ -27,7 +23,7 @@ export const registerNewAdmin = catchAsyncErrors(async (req, res, next) => {
   }
 
   const isRegistered = await prisma.user.findFirst({
-    where: { email, accountVerified: true },
+    where: { email },
   });
 
   if (isRegistered) {
@@ -40,27 +36,27 @@ export const registerNewAdmin = catchAsyncErrors(async (req, res, next) => {
     );
   }
 
-  const { avatar } = req.files;
-  const allowedFormats = ["image/png", "image/jpeg", "image/webp"];
-  if (!allowedFormats.includes(avatar.mimetype)) {
-    return next(new ErrorHandler("File format not supported.", 400));
-  }
-
   const hashedPassword = await bcrypt.hash(password, 10);
 
-  const cloudinaryResponse = await cloudinary.uploader.upload(
-    avatar.tempFilePath,
-    { folder: "LIBRARY_MANAGEMENT_SYSTEM_ADMIN_AVATARS" }
-  );
+  let avatarPublicId = null;
+  let avatarUrl = null;
 
-  if (!cloudinaryResponse || cloudinaryResponse.error) {
-    console.error(
-      "Cloudinary error:",
-      cloudinaryResponse.error || "Unknown cloudinary error."
+  if (req.files && req.files.avatar) {
+    const { avatar } = req.files;
+    const allowedFormats = ["image/png", "image/jpeg", "image/webp"];
+    if (!allowedFormats.includes(avatar.mimetype)) {
+      return next(new ErrorHandler("File format not supported.", 400));
+    }
+
+    const cloudinaryResponse = await cloudinary.uploader.upload(
+      avatar.tempFilePath,
+      { folder: "LIBRARY_MANAGEMENT_SYSTEM_ADMIN_AVATARS" }
     );
-    return next(
-      new ErrorHandler("Failed to upload avatar image to cloudinary.", 500)
-    );
+
+    if (cloudinaryResponse && !cloudinaryResponse.error) {
+      avatarPublicId = cloudinaryResponse.public_id;
+      avatarUrl = cloudinaryResponse.secure_url;
+    }
   }
 
   const admin = await prisma.user.create({
@@ -69,9 +65,8 @@ export const registerNewAdmin = catchAsyncErrors(async (req, res, next) => {
       email,
       password: hashedPassword,
       role: "Admin",
-      accountVerified: true,
-      avatarPublicId: cloudinaryResponse.public_id,
-      avatarUrl: cloudinaryResponse.secure_url,
+      avatarPublicId,
+      avatarUrl,
     },
   });
 

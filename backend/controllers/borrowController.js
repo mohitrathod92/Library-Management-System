@@ -1,11 +1,12 @@
 import { catchAsyncErrors } from "../middlewares/catchAsyncErrors.js";
 import ErrorHandler from "../middlewares/errorMiddlewares.js";
+import { getIO } from "../lib/socket.js";
 import { prisma } from "../lib/prisma.js";
 import { calculateFine } from "../utils/fineCalculator.js";
 
 export const recordBorrowedBook = catchAsyncErrors(async (req, res, next) => {
     const { id } = req.params; // bookId
-    const { email } = req.body;
+    const { email, customDueDate, customPrice } = req.body;
 
     const book = await prisma.book.findUnique({ where: { id } });
     if (!book) {
@@ -13,7 +14,7 @@ export const recordBorrowedBook = catchAsyncErrors(async (req, res, next) => {
     }
 
     const user = await prisma.user.findFirst({
-        where: { email, accountVerified: true },
+        where: { email },
     });
     if (!user) {
         return next(new ErrorHandler("User not found.", 404));
@@ -31,7 +32,8 @@ export const recordBorrowedBook = catchAsyncErrors(async (req, res, next) => {
         return next(new ErrorHandler("Book already borrowed.", 400));
     }
 
-    const dueDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+    const dueDate = customDueDate ? new Date(customDueDate) : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+    const finalPrice = customPrice !== undefined ? parseFloat(customPrice) : book.price;
 
     // Update book quantity
     await prisma.book.update({
@@ -49,9 +51,12 @@ export const recordBorrowedBook = catchAsyncErrors(async (req, res, next) => {
             bookId: book.id,
             bookTitle: book.title,
             dueDate,
-            price: book.price,
+            price: finalPrice,
         },
     });
+
+    getIO().emit("borrows_updated");
+    getIO().emit("books_updated");
 
     res.status(200).json({
         success: true,
@@ -69,7 +74,7 @@ export const returnBorrowBook = catchAsyncErrors(async (req, res, next) => {
     }
 
     const user = await prisma.user.findFirst({
-        where: { email, accountVerified: true },
+        where: { email },
     });
     if (!user) {
         return next(new ErrorHandler("User not found.", 404));
@@ -103,6 +108,9 @@ export const returnBorrowBook = catchAsyncErrors(async (req, res, next) => {
             availability: true,
         },
     });
+
+    getIO().emit("borrows_updated");
+    getIO().emit("books_updated");
 
     res.status(200).json({
         success: true,

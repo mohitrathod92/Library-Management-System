@@ -1,5 +1,8 @@
 import { configureStore, createSlice } from "@reduxjs/toolkit";
 import authReducer from "./slices/authSlice.js";
+import bookReducer from "./slices/bookSlice.js";
+import borrowReducer from "./slices/borrowSlice.js";
+import userReducer from "./slices/userSlice.js";
 
 const popupSlice = createSlice({
   name: "popup",
@@ -22,7 +25,9 @@ export const { toggleAddNewAdminPopup, toggleSettingPopup } = popupSlice.actions
 export const store = configureStore({
   reducer: {
     auth: authReducer,
+    book: bookReducer,
+    borrow: borrowReducer,
+    user: userReducer,
     popup: popupSlice.reducer,
   },
 });
-
