@@ -67,6 +67,10 @@ const bookSlice = createSlice({
             .addCase(addBook.fulfilled, (state, action) => {
                 state.loading = false;
                 state.message = action.payload.message;
+                // Immediately add the new book to the list so UI updates without a refresh
+                if (action.payload.book) {
+                    state.books.push(action.payload.book);
+                }
             })
             .addCase(addBook.rejected, (state, action) => {
                 state.loading = false;
@@ -79,6 +83,9 @@ const bookSlice = createSlice({
             .addCase(deleteBook.fulfilled, (state, action) => {
                 state.loading = false;
                 state.message = action.payload.message;
+                // Immediately remove the deleted book from the list
+                const deletedId = action.meta.arg;
+                state.books = state.books.filter(b => b.id !== deletedId);
             })
             .addCase(deleteBook.rejected, (state, action) => {
                 state.loading = false;
