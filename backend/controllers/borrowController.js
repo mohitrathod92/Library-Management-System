@@ -117,7 +117,9 @@ export const returnBorrowBook = catchAsyncErrors(async (req, res, next) => {
 export const borrowedBooks = catchAsyncErrors(async (req, res, next) => {
     const borrowedBooks = await prisma.borrow.findMany({
         where: { userId: req.user.id },
-        include: { book: { select: { title: true, author: true } } },
+        include: {
+            book: { select: { title: true, author: true, genre: true, coverUrl: true } },
+        },
         orderBy: { borrowDate: "desc" },
     });
 

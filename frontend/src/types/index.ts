@@ -68,9 +68,12 @@ export interface BorrowedBook {
   user_id: string;
   book_title: string;
   book_author: string;
+  book_genre?: string;
+  book_cover?: string;
   borrower_name: string;
   borrower_email: string;
   price: number;
+  fine?: number;
   borrow_date: string;
   due_date: string;
   returned: boolean;
